@@ -1,5 +1,5 @@
 import json
-
+from datetime import datetime
 #Odpre Stroške za branje
 def load_expenses():
     try:
@@ -22,7 +22,8 @@ def add_expense(expenses):
     expense = {
         "amount": amount,
         "category": category,
-        "description": description
+        "description": description,
+        "date": datetime.now().strftime("%Y-%m-%d")
     }    
 
     expenses.append(expense)
@@ -37,7 +38,7 @@ def view_expenses(expenses):
     
     print("\n--- Tvoji Stroški ---")
     for i, expense in enumerate(expenses, 1):
-        print(f"{i}. {expense['description']} - {expense['amount']:.2f} ({expense['category']})")
+        print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']} - {expense.get('date', 'N/A')})")
 
 #glavni meni
 
