@@ -98,6 +98,70 @@ def show_totals(expenses):
     for category, amount in category_totals.items():
         print(f" {category}: {amount:.2f} €")
 
+#izbriši strošek
+def delete_expense(expenses):
+    if not expenses:
+        print("Zaenkrat nimaš Stroškov!")
+        return
+    #Pod meni
+    print("\n=== Izbriši Strošek ===")
+    print("1. Izbriši zadnji Strošek (Hitro)")
+    print("2. Izberi Strošek za izbris")
+    print("3. Prekliči")
+
+    choice = input("\nIzberi (1-3): ")
+
+    if choice == '1':#hiter zadnji izbris
+        last = expenses[-1]
+        print(f"Zadnji strošek {last['description']} - {last['amount']:.2f}€")
+        confirm = input("Izbrišem ta strošek? (da/ne): ").lower()
+
+        if confirm == 'da':
+            deleted = expenses.pop()
+            save_expenses(expenses)
+            print(f"Strošek '{deleted['description']}' {deleted['amount']}€  Izbrisan!")
+        else:
+            print("Preklicano. ")
+        
+
+    elif choice == '2':
+        #Izbris po izbiri
+        print("\n--- Tvoji Stroški ---")
+        for i, expense in enumerate(expenses, 1):
+            print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']}) - {expense.get('date', 'N/A')}")
+        try:
+            num = int(input("\nVnesi številko stroška za izbris (0 za preklic): "))
+
+            if num == 0:
+                print("Preklicano.")
+                return
+            
+            if 1 <= num <= len(expenses):
+                expense_to_delete = expenses[num - 1]
+                confirm = input(f" Izbrišem '{expense_to_delete['description']}' ? (da/ne): ").lower()    
+
+                if confirm == 'da':
+                    deleted = expenses.pop(num - 1)
+                    save_expenses(expenses)
+                    print(f" Strošek '{deleted['description']}' izbrisan!")
+                    
+                else:
+                    print("Preklicano.")
+            else: 
+                print("Napačna Številka!")
+
+        except ValueError:
+            print("Vnesi veljavno Število!")
+
+    elif choice == '3':
+        print("Preklicano.")
+
+    else:
+        print("Neveljavna Izbira!")                
+
+
+
+
 
 #glavni meni
 
@@ -110,9 +174,10 @@ def main():
         print("1. Dodaj Strošek")
         print("2. Preglej Stroške")
         print("3. Prikaži skupne Stroške")
-        print("4. Izhod")
+        print("4. Izbriši Strošek")
+        print("5. Izhod")
 
-        choice = input("\nIzberi Opcijo (1-4): ")
+        choice = input("\nIzberi Opcijo (1-5): ")
 
         if choice == '1':
             add_expense(expenses, categories)
@@ -121,6 +186,8 @@ def main():
         elif choice == '3':
             show_totals(expenses)
         elif choice == '4':
+            delete_expense(expenses)
+        elif choice == '5':
             break
         else:
             print("Napačna izbira, poskusi znova.")
