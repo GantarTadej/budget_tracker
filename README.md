@@ -5,9 +5,11 @@ Kratek stroškovnik v pythonu
 ## Features 
 - Dodaj strošek z kategorijo in vsoto
 - **Avtomatsko dodajanje datumov** 
-- **Prilagodljive kategorije** (vnaprej določene + možnost dodajanja novih)
+- **Prilagodljive kategorije** (vnaprej določene + možnost dodajanja novih) 
+- **Upravljanje kategorij** (izbris nepotrebnih kategorij)
 - Izpiši stroške
 - **Prikaži skupne stroške po kategorijah** 
+- **Izbris stroškov** (hitri izbris zadnjega ali izbira po seznamu)
 - .json za shranjevanje
 
 ## How to Run
@@ -23,11 +25,12 @@ python budget.py
 - **Python datetime modul**
 - **Delo z več JSON files**
 - **Dinamični meniji** 
+- **List manipulation** (pop, remove)
+- **Sub-menus in user flow**
 
 ## Future Improvements
-
-- Izbris vnosov ali popravki
 - **Filtriranje po datumu**
 - **Export v CSV**
 - Mesečni budget (Varčevalnik, Vnos plače)
 - Dnevni input in mesečni vprašalnik ob plači
+- Čez 20 let => poveži z kartico
