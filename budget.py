@@ -159,9 +159,57 @@ def delete_expense(expenses):
     else:
         print("Neveljavna Izbira!")                
 
+#uredi kategorije
+def manage_categories(categories, expenses):
+    print("\n=== Uredi Kategorije ===")
+    print("\nObstoječe kategorije: ")
 
+    user_categories = []
+    for i, cat  in enumerate(categories):
+        if cat not in ["ostalo", "Dodaj Novo Kategorijo"]:
+            user_categories.append(cat)
+            #koliko stroškov uporablja to kategorijo
+            count = sum(1 for exp in expenses if exp['category'] == cat)
+            print(f"{len(user_categories)}. {cat} ({count} stroškov)")
+    if not user_categories:
+        print("Nimaš kategorij!")
+        return
+    
+    print("\n0. Prekliči.")
 
+    try:
+        choice = int(input("\nVnesi Številko kategorije za izbris (0 za preklic): "))
 
+        if choice == 0:
+            print("Preklicano. ")
+            return
+        if 1 <= choice <= len(user_categories):
+            cat_to_delete = user_categories[choice - 1]
+
+            expense_count = sum(1 for exp in expenses if exp['category'] == cat_to_delete)
+
+            if expense_count > 0:
+                print(f"Pazi: {expense_count} stroškov uporablja to kategorijo.")
+                confirm = input(f"Izbrišem '{cat_to_delete}' ? Stroški bodo kopirani pod 'ostalo'. (da/ne): ").lower()
+            else:
+                confirm = input(f"Izbrišem '{cat_to_delete}'? (da/ne): ")
+            if confirm == 'da':
+                categories.remove(cat_to_delete)
+                save_categories(categories)
+
+                for expense in expenses:
+                    if expense['category'] == cat_to_delete:
+                        expense['category'] = 'ostalo'
+                if expense_count > 0:
+                    save_expenses(expenses)
+                print(f"Kategorija '{cat_to_delete}' izbrisana.")
+            else:
+                print("Preklicano.")
+        else:
+            print("Napačna številka!")
+
+    except ValueError:
+        print("Vnesi veljavno številko!")
 
 #glavni meni
 
@@ -175,9 +223,10 @@ def main():
         print("2. Preglej Stroške")
         print("3. Prikaži skupne Stroške")
         print("4. Izbriši Strošek")
-        print("5. Izhod")
+        print("5. Izbriši Kategorijo")
+        print("6. Izhod")
 
-        choice = input("\nIzberi Opcijo (1-5): ")
+        choice = input("\nIzberi Opcijo (1-6): ")
 
         if choice == '1':
             add_expense(expenses, categories)
@@ -188,6 +237,8 @@ def main():
         elif choice == '4':
             delete_expense(expenses)
         elif choice == '5':
+            manage_categories(categories, expenses)
+        elif choice == '6':
             break
         else:
             print("Napačna izbira, poskusi znova.")
