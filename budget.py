@@ -1,5 +1,7 @@
 import json
 from datetime import datetime
+# Default categories
+DEFAULT_CATEGORIES = ["hrana", "najemnina", "transport", "zabava", "zdravje","DRUGO...", "ostalo", "Dodaj Novo Kategorijo"]
 #Odpre Stroške za branje
 def load_expenses():
     try:
@@ -13,10 +15,44 @@ def save_expenses(expenses):
     with open('expenses.json', 'w') as file:
         json.dump(expenses, file, indent = 4)
 
+def load_categories():
+    try:
+        with open('categories.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return DEFAULT_CATEGORIES.copy()
+
+def save_categories(categories):
+    with open('categories.json', 'w') as file:
+        json.dump(categories, file, indent=4)
+
 #dodaj strošek
-def add_expense(expenses):
+def add_expense(expenses, categories):
     amount = float(input("Vnesi vsoto: "))
-    category = input("Vnesi kategorijo: (Hrana, Najemnina, Avto, drugo): ")
+
+    #razpoložljive kategorije
+    print("\nRazpoložljive kategorije: ")
+    for i, cat in enumerate(categories, 1):
+        if cat == "Dodaj Novo Kategorijo":
+            print(f"{i}. {cat}")
+        else: 
+            print(f"{i}. {cat}")
+    
+    choice = input("\nIzberi Številko Kategorije: ")
+    try:
+        cat_index = int(choice) - 1
+        if categories[cat_index] == "Dodaj Novo Kategorijo":
+            new_category = input("Vnesi novo kategorijo: ").lower()
+            categories.insert(-1, new_category)
+            save_categories(categories)
+            category = new_category
+            print(f"Nova kategorija >{new_category}< dodana! ")
+        else:
+            category = categories[cat_index]
+    except (ValueError, IndexError):
+        print("Napačna Izbira, uporabljam 'ostalo'")
+        category = 'ostalo'
+    
     description = input("Opis: ") 
 
     expense = {
@@ -67,6 +103,7 @@ def show_totals(expenses):
 
 def main():
     expenses = load_expenses()
+    categories = load_categories()
 
     while True:
         print("\n=== Budget Tracker ===")
@@ -78,7 +115,7 @@ def main():
         choice = input("\nIzberi Opcijo (1-4): ")
 
         if choice == '1':
-            add_expense(expenses)
+            add_expense(expenses, categories)
         elif choice == '2':
             view_expenses(expenses)
         elif choice == '3':
