@@ -40,6 +40,29 @@ def view_expenses(expenses):
     for i, expense in enumerate(expenses, 1):
         print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']} - {expense.get('date', 'N/A')})")
 
+#Skupne vrednosti
+def show_totals(expenses):
+    if not expenses:
+        print("Zaenkrat nimaš stroškov!")
+        return 
+    
+    total = sum(expense['amount'] for expense in expenses)
+
+    category_totals = {}
+    for expense in expenses:
+        category = expense['category']
+        if category in category_totals:
+            category_totals[category] += expense['amount']
+        else:
+            category_totals[category] = expense['amount']
+    
+    print("\n=== Skupni Stroški ===")
+    print(f"Skupaj {total:.2f} €")
+    print("\n Po kategorijah: ")
+    for category, amount in category_totals.items():
+        print(f" {category}: {amount:.2f} €")
+
+
 #glavni meni
 
 def main():
@@ -49,15 +72,18 @@ def main():
         print("\n=== Budget Tracker ===")
         print("1. Dodaj Strošek")
         print("2. Preglej Stroške")
-        print("3. Izhod")
+        print("3. Prikaži skupne Stroške")
+        print("4. Izhod")
 
-        choice = input("\nIzberi Opcijo (1-3): ")
+        choice = input("\nIzberi Opcijo (1-4): ")
 
         if choice == '1':
             add_expense(expenses)
         elif choice == '2':
             view_expenses(expenses)
         elif choice == '3':
+            show_totals(expenses)
+        elif choice == '4':
             break
         else:
             print("Napačna izbira, poskusi znova.")
