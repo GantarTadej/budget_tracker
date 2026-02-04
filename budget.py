@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from validation import get_valid_int, get_valid_float
 # Default categories
 DEFAULT_CATEGORIES = ["hrana", "najemnina", "transport", "zabava", "zdravje","DRUGO...", "ostalo", "Dodaj Novo Kategorijo"]
 #Odpre Stroške za branje
@@ -28,7 +29,7 @@ def save_categories(categories):
 
 #dodaj strošek
 def add_expense(expenses, categories):
-    amount = float(input("Vnesi vsoto: "))
+    amount = get_valid_float("Vnesi vsoto: ", min_value = 0.01)
 
     #razpoložljive kategorije
     print("\nRazpoložljive kategorije: ")
@@ -38,20 +39,17 @@ def add_expense(expenses, categories):
         else: 
             print(f"{i}. {cat}")
     
-    choice = input("\nIzberi Številko Kategorije: ")
-    try:
-        cat_index = int(choice) - 1
-        if categories[cat_index] == "Dodaj Novo Kategorijo":
-            new_category = input("Vnesi novo kategorijo: ").lower()
-            categories.insert(-1, new_category)
-            save_categories(categories)
-            category = new_category
-            print(f"Nova kategorija >{new_category}< dodana! ")
-        else:
+    choice = get_valid_int("\nIzberi Številko Kategorije: ", min_value = 1, max_value = len(categories))
+    cat_index = choice - 1
+
+    if categories[cat_index] == "Dodaj Novo Kategorijo":
+        new_category = input("Vnesi novo kategorijo: ").lower()
+        categories.insert(-1, new_category)
+        save_categories(categories)
+        category = new_category
+        print(f"Nova kategorija >{new_category}< dodana! ")
+    else:
             category = categories[cat_index]
-    except (ValueError, IndexError):
-        print("Napačna Izbira, uporabljam 'ostalo'")
-        category = 'ostalo'
     
     description = input("Opis: ") 
 
@@ -109,9 +107,9 @@ def delete_expense(expenses):
     print("2. Izberi Strošek za izbris")
     print("3. Prekliči")
 
-    choice = input("\nIzberi (1-3): ")
+    choice = get_valid_int("\nIzberi (1-3): ", min_value = 1, max_value = 3)
 
-    if choice == '1':#hiter zadnji izbris
+    if choice == 1:#hiter zadnji izbris
         last = expenses[-1]
         print(f"Zadnji strošek {last['description']} - {last['amount']:.2f}€")
         confirm = input("Izbrišem ta strošek? (da/ne): ").lower()
@@ -124,36 +122,33 @@ def delete_expense(expenses):
             print("Preklicano. ")
         
 
-    elif choice == '2':
+    elif choice == 2:
         #Izbris po izbiri
         print("\n--- Tvoji Stroški ---")
         for i, expense in enumerate(expenses, 1):
             print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']}) - {expense.get('date', 'N/A')}")
-        try:
-            num = int(input("\nVnesi številko stroška za izbris (0 za preklic): "))
+    
+        num = get_valid_int("\nVnesi številko stroška za izbris (0 za preklic): ", min_value = 0, max_value = len(expenses))
 
-            if num == 0:
-                print("Preklicano.")
-                return
+        if num == 0:
+            print("Preklicano.")
+            return
+        
+    
+        expense_to_delete = expenses[num - 1]
+        confirm = input(f" Izbrišem '{expense_to_delete['description']}' ? (da/ne): ").lower()    
+
+        if confirm == 'da':
+            deleted = expenses.pop(num - 1)
+            save_expenses(expenses)
+            print(f" Strošek '{deleted['description']}' izbrisan!")
             
-            if 1 <= num <= len(expenses):
-                expense_to_delete = expenses[num - 1]
-                confirm = input(f" Izbrišem '{expense_to_delete['description']}' ? (da/ne): ").lower()    
+        else:
+            print("Preklicano.")
 
-                if confirm == 'da':
-                    deleted = expenses.pop(num - 1)
-                    save_expenses(expenses)
-                    print(f" Strošek '{deleted['description']}' izbrisan!")
-                    
-                else:
-                    print("Preklicano.")
-            else: 
-                print("Napačna Številka!")
+        
 
-        except ValueError:
-            print("Vnesi veljavno Število!")
-
-    elif choice == '3':
+    elif choice == 3:
         print("Preklicano.")
 
     else:
@@ -177,39 +172,30 @@ def manage_categories(categories, expenses):
     
     print("\n0. Prekliči.")
 
-    try:
-        choice = int(input("\nVnesi Številko kategorije za izbris (0 za preklic): "))
+    choice = get_valid_int("\nVnesi Številko kategorije za izbris (0 za preklic): ", min_value = 0, max_value = len(user_categories))
 
-        if choice == 0:
-            print("Preklicano. ")
-            return
-        if 1 <= choice <= len(user_categories):
-            cat_to_delete = user_categories[choice - 1]
+    if choice == 0:
+        print("Preklicano. ")
+        return
+    cat_to_delete = user_categories[choice - 1]
+    expense_count = sum(1 for exp in expenses if exp['category'] == cat_to_delete)
 
-            expense_count = sum(1 for exp in expenses if exp['category'] == cat_to_delete)
-
+    if expense_count > 0:
+        print(f"Pazi: {expense_count} stroškov uporablja to kategorijo.")
+        confirm = input(f"Izbrišem '{cat_to_delete}' ? Stroški bodo kopirani pod 'ostalo'. (da/ne): ").lower()
+    else:
+        confirm = input(f"Izbrišem '{cat_to_delete}'? (da/ne): ")
+        if confirm == 'da':
+            categories.remove(cat_to_delete)
+            save_categories(categories)
+            for expense in expenses:
+                if expense['category'] == cat_to_delete:
+                    expense['category'] = 'ostalo'
             if expense_count > 0:
-                print(f"Pazi: {expense_count} stroškov uporablja to kategorijo.")
-                confirm = input(f"Izbrišem '{cat_to_delete}' ? Stroški bodo kopirani pod 'ostalo'. (da/ne): ").lower()
-            else:
-                confirm = input(f"Izbrišem '{cat_to_delete}'? (da/ne): ")
-            if confirm == 'da':
-                categories.remove(cat_to_delete)
-                save_categories(categories)
-
-                for expense in expenses:
-                    if expense['category'] == cat_to_delete:
-                        expense['category'] = 'ostalo'
-                if expense_count > 0:
-                    save_expenses(expenses)
+                save_expenses(expenses)
                 print(f"Kategorija '{cat_to_delete}' izbrisana.")
             else:
                 print("Preklicano.")
-        else:
-            print("Napačna številka!")
-
-    except ValueError:
-        print("Vnesi veljavno številko!")
 
 #glavni meni
 
@@ -226,19 +212,19 @@ def main():
         print("5. Izbriši Kategorijo")
         print("6. Izhod")
 
-        choice = input("\nIzberi Opcijo (1-6): ")
+        choice = get_valid_int("Vnesi izbiro med 1 in 6: ", min_value = 1, max_value = 6)
 
-        if choice == '1':
+        if choice == 1:
             add_expense(expenses, categories)
-        elif choice == '2':
+        elif choice == 2:
             view_expenses(expenses)
-        elif choice == '3':
+        elif choice ==  3:
             show_totals(expenses)
-        elif choice == '4':
+        elif choice == 4:
             delete_expense(expenses)
-        elif choice == '5':
+        elif choice == 5:
             manage_categories(categories, expenses)
-        elif choice == '6':
+        elif choice == 6:
             break
         else:
             print("Napačna izbira, poskusi znova.")
