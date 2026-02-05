@@ -22,6 +22,7 @@ budget-tracker/
 - **Prikaži skupne stroške po kategorijah** 
 - **Izbris stroškov** (hitri izbris zadnjega ali izbira po seznamu)
 - .json za shranjevanje
+- settings (v procesu dodajanja)
 
 ## How to Run
 ```bash
@@ -45,8 +46,8 @@ python budget.py
 
 ## Future Improvements
 - **Filtriranje po datumu**
+- Prikaz z ascii ali eno izmed knjižnic
 - **Export v CSV**
 - Mesečni budget (Varčevalnik, Vnos plače)
-- Dnevni input in mesečni vprašalnik ob plači
 - Čez 20 let => poveži z kartico
 - Unit testing
