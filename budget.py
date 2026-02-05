@@ -69,11 +69,12 @@ def view_expenses(expenses):
         print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']} - {expense.get('date', 'N/A')})")
 
 #Skupne vrednosti
-def show_totals(expenses):
+def show_totals(expenses, settings):
     if not expenses:
         print("Zaenkrat nimaš stroškov!")
         return 
-    
+    current_month = datetime.now().month
+    current_year = datetime.now().year
     total = sum(expense['amount'] for expense in expenses)
 
     category_totals = {}
@@ -84,11 +85,37 @@ def show_totals(expenses):
         else:
             category_totals[category] = expense['amount']
     
+    monthly_expenses = [
+        exp for exp in expenses 
+        if datetime.strptime(exp['date'], '%Y-%m-%d').month == current_month 
+        and datetime.strptime(exp['date'], '%Y-%m-%d').year == current_year
+        ]
+    monthly_total = sum(exp['amount'] for exp in monthly_expenses)
+
     print("\n=== Skupni Stroški ===")
-    print(f"Skupaj {total:.2f} €")
-    print("\n Po kategorijah: ")
+    print(f"Skupaj (vse): {total:.2f}€")
+
+    print("\n--- Po Kategorijah ---")
     for category, amount in category_totals.items():
-        print(f" {category}: {amount:.2f} €")
+        print(f"  {category}: {amount:.2f}€")
+
+    print(f"\n--- Ta Mesec ---")
+    print(f"Stroški ta mesec: {monthly_total:.2f}€")
+
+    if settings['monthly_budget'] > 0:
+        budget = settings['monthly_budget']
+        percentage = (monthly_total / budget) * 100
+        remaining = budget - monthly_total
+    
+        print(f"Proračun: {budget:.2f}€")
+        print(f"Porabljeno: {percentage:.1f}%")
+    
+        if monthly_total > budget:
+            print(f"Pozor!  Prekoračitev: {abs(remaining):.2f}€")
+        else:
+            print(f"Ostaja: {remaining:.2f}€")
+    else:
+        print("(Proračun ni nastavljen)")
 
 #izbriši strošek
 def delete_expense(expenses):
@@ -231,7 +258,7 @@ def main():
         elif choice == 2:
             view_expenses(expenses)
         elif choice ==  3:
-            show_totals(expenses)
+            show_totals(expenses, settings)
         elif choice == 4:
             delete_expense(expenses)
         elif choice == 5:
