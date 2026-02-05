@@ -1,2 +1,4 @@
 expenses.json
 categories.json
+__pycache__/
+*.pyc
