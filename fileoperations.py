@@ -12,6 +12,9 @@ def load_expenses():
             return json.load(file)
     except FileNotFoundError:
         return []
+    except json.JSONDecodeError:
+        print("Napaka pri branju expenses.json. Uporabljam prazno bazo.")
+        return []
     
 #odpre stroške za pisanje
 def save_expenses(expenses):
@@ -24,6 +27,9 @@ def load_categories():
             return json.load(file)
     except FileNotFoundError:
         return DEFAULT_CATEGORIES.copy()
+    except json.JSONDecodeError:
+        print("Napaka pri branju categories.json. Uporabljam privzete kategorije.")
+        return DEFAULT_CATEGORIES.copy()
 
 def save_categories(categories):
     with open('categories.json', 'w') as file:
@@ -34,6 +40,9 @@ def load_settings():
         with open('settings.json', 'r') as file:
             return json.load(file)
     except FileNotFoundError:
+        return DEFAULT_SETTINGS.copy()
+    except json.JSONDecodeError:
+        print("⚠️  Napaka pri branju settings.json. Uporabljam privzete nastavitve.")
         return DEFAULT_SETTINGS.copy()
 
 def save_settings(settings):
