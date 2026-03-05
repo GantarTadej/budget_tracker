@@ -1,43 +1,35 @@
-import json
+import sqlite3
 from datetime import datetime
 from validation import get_valid_int, get_valid_float
-from fileoperations import load_expenses, save_expenses, load_categories, save_categories, load_settings, save_settings
+from fileoperations import initialize_db, delete_category, db_delete_expense, load_expenses, save_expense, load_categories, save_category, load_settings, save_settings, reassign_category
 
 #dodaj strošek
-def add_expense(expenses, categories):
-    amount = get_valid_float("Vnesi vsoto: ", min_value = 0.01)
+def add_expense():
+    amount = get_valid_float("Vnesi vsoto: ", min_value=0.01)
 
-    #razpoložljive kategorije
+    categories = load_categories()
+
     print("\nRazpoložljive kategorije: ")
     for i, cat in enumerate(categories, 1):
-        if cat == "Dodaj Novo Kategorijo":
-            print(f"{i}. {cat}")
-        else: 
-            print(f"{i}. {cat}")
-    
-    choice = get_valid_int("\nIzberi Številko Kategorije: ", min_value = 1, max_value = len(categories))
-    cat_index = choice - 1
+        print(f"{i}. {cat}")
+    print(f"{len(categories) + 1}. Dodaj Novo Kategorijo")
 
-    if categories[cat_index] == "Dodaj Novo Kategorijo":
-        category = get_or_create_category(categories)
+    choice = get_valid_int("\nIzberi Številko Kategorije: ", min_value=1, max_value=len(categories) + 1)
+
+    if choice == len(categories) + 1:
+        category = get_or_create_category()
     else:
-            category = categories[cat_index]
-    
-    description = input("Opis: ") 
+        category = categories[choice - 1]
 
-    expense = {
-        "amount": amount,
-        "category": category,
-        "description": description,
-        "date": datetime.now().strftime("%Y-%m-%d")
-    }    
+    description = input("Opis: ")
+    date = datetime.now().strftime("%Y-%m-%d")
 
-    expenses.append(expense)
-    save_expenses(expenses)
+    save_expense(amount, description, date, category)
     print("Strošek uspešno dodan!!")
 
 #Preveri kategorije nova/stara
-def get_or_create_category(categories):
+def get_or_create_category():
+    categories = load_categories()
     while True:
         user_input = input("Vnesi novo kategorijo: ").strip()
         normalized_input = user_input.casefold()
@@ -47,29 +39,30 @@ def get_or_create_category(categories):
         if existing:
             print(f"Kategorija '{existing}' že obstaja!")
             choice = input("Uporabi obstoječo kategorijo? (da/ne): ").lower()
-            
             if choice == 'da':
                 return existing
             else:
                 print("Vnesi drugo ime kategorije.")
         else:
-            categories.insert(-1, user_input)
-            save_categories(categories)
+            save_category(user_input)
             print(f"Nova kategorija '{user_input}' dodana!")
             return user_input
         
 #Preglej Stroške
-def view_expenses(expenses):
+def view_expenses():
+    expenses = load_expenses()
     if not expenses:
         print("Zaenkrat nimaš stroškov!")
         return 
     
     print("\n--- Tvoji Stroški ---")
     for i, expense in enumerate(expenses, 1):
-        print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']} - {expense.get('date', 'N/A')})")
+        print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']} - {expense['date']})")
 
 #Skupne vrednosti
-def show_totals(expenses, settings):
+def show_totals():
+    expenses = load_expenses()
+    settings = load_settings()
     if not expenses:
         print("Zaenkrat nimaš stroškov!")
         return 
@@ -118,71 +111,61 @@ def show_totals(expenses, settings):
         print("(Proračun ni nastavljen)")
 
 #izbriši strošek
-def delete_expense(expenses):
+def delete_expense():
+    expenses = load_expenses()
+    
     if not expenses:
         print("Zaenkrat nimaš Stroškov!")
         return
-    #Pod meni
+
     print("\n=== Izbriši Strošek ===")
     print("1. Izbriši zadnji Strošek (Hitro)")
     print("2. Izberi Strošek za izbris")
     print("3. Prekliči")
 
-    choice = get_valid_int("\nIzberi (1-3): ", min_value = 1, max_value = 3)
+    choice = get_valid_int("\nIzberi (1-3): ", min_value=1, max_value=3)
 
-    if choice == 1:#hiter zadnji izbris
+    if choice == 1:
         last = expenses[-1]
         print(f"Zadnji strošek {last['description']} - {last['amount']:.2f}€")
         confirm = input("Izbrišem ta strošek? (da/ne): ").lower()
-
         if confirm == 'da':
-            deleted = expenses.pop()
-            save_expenses(expenses)
-            print(f"Strošek '{deleted['description']}' {deleted['amount']}€  Izbrisan!")
+            delete_expense(last['id'])
+            print(f"Strošek '{last['description']}' izbrisan!")
         else:
-            print("Preklicano. ")
-        
+            print("Preklicano.")
 
     elif choice == 2:
-        #Izbris po izbiri
-        print("\n--- Tvoji Stroški ---")
         for i, expense in enumerate(expenses, 1):
-            print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']}) - {expense.get('date', 'N/A')}")
-    
-        num = get_valid_int("\nVnesi številko stroška za izbris (0 za preklic): ", min_value = 0, max_value = len(expenses))
-
+            print(f"{i}. {expense['description']} - {expense['amount']:.2f}€ - ({expense['category']}) - {expense['date']}")
+        
+        num = get_valid_int("\nVnesi številko: ", min_value=0, max_value=len(expenses))
         if num == 0:
             print("Preklicano.")
             return
         
-    
         expense_to_delete = expenses[num - 1]
-        confirm = input(f" Izbrišem '{expense_to_delete['description']}' ? (da/ne): ").lower()    
-
+        confirm = input(f"Izbrišem '{expense_to_delete['description']}' ? (da/ne): ").lower()
         if confirm == 'da':
-            deleted = expenses.pop(num - 1)
-            save_expenses(expenses)
-            print(f" Strošek '{deleted['description']}' izbrisan!")
-            
+            db_delete_expense(expense_to_delete['id'])  # and here?
+            print(f"Strošek '{expense_to_delete['description']}' izbrisan!")
         else:
             print("Preklicano.")
-
-        
 
     elif choice == 3:
         print("Preklicano.")
 
-    else:
-        print("Neveljavna Izbira!")                
 
 #uredi kategorije
-def manage_categories(categories, expenses):
+def manage_categories():
+    categories = load_categories()
+    expenses = load_expenses()
     print("\n=== Uredi Kategorije ===")
     print("\nObstoječe kategorije: ")
 
     user_categories = []
     for i, cat  in enumerate(categories):
-        if cat not in ["ostalo", "Dodaj Novo Kategorijo"]:
+        if cat not in ["ostalo"]:
             user_categories.append(cat)
             #koliko stroškov uporablja to kategorijo
             count = sum(1 for exp in expenses if exp['category'] == cat)
@@ -207,18 +190,15 @@ def manage_categories(categories, expenses):
     else:
         confirm = input(f"Izbrišem '{cat_to_delete}'? (da/ne): ")
     if confirm == 'da':
-        categories.remove(cat_to_delete)
-        save_categories(categories)
-        for expense in expenses:
-            if expense['category'] == cat_to_delete:
-                expense['category'] = 'ostalo'
-        if expense_count > 0:
-            save_expenses(expenses)
-            print(f"Kategorija '{cat_to_delete}' izbrisana.")
-        else:
-            print("Preklicano.")
+        reassign_category(cat_to_delete)
+        delete_category(cat_to_delete)
+        print(f"Kategorija '{cat_to_delete}' izbrisana.")
+    else:
+        print("Preklicano.")
+
 #Nastavitve
-def settings_menu(settings):
+def settings_menu():
+    settings = load_settings()
     print("\n=== Nastavitve ===")
     print(f"1. Nastavi mesečni proračun (trenutno: {settings['monthly_budget']:.2f}€)")
     print("2. Nazaj")
@@ -237,9 +217,7 @@ def settings_menu(settings):
 #glavni meni
 
 def main():
-    expenses = load_expenses()
-    categories = load_categories()
-    settings = load_settings()
+    initialize_db()
 
     while True:
         print("\n=== Budget Tracker ===")
@@ -254,17 +232,17 @@ def main():
         choice = get_valid_int("Vnesi izbiro med 1 in 6: ", min_value = 1, max_value = 7)
 
         if choice == 1:
-            add_expense(expenses, categories)
+            add_expense()
         elif choice == 2:
-            view_expenses(expenses)
+            view_expenses()
         elif choice ==  3:
-            show_totals(expenses, settings)
+            show_totals()
         elif choice == 4:
-            delete_expense(expenses)
+            delete_expense()
         elif choice == 5:
-            manage_categories(categories, expenses)
+            manage_categories()
         elif choice == 6:
-            settings_menu(settings)
+            settings_menu()
         elif choice == 7:
             break
         else:
